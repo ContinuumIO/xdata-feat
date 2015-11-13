@@ -1,0 +1,959 @@
+/* TABLE OF CONTENTS **
+---------------------------------------
+** 1 Global Declarations
+** 2 Main Page Layout
+** 3 Common Controls
+     3.1 Modal Dialog
+     3.2 Selector Trigger
+     3.3 Legend
+     3.4 Selected Region Report (#plugins_wrapper)
+** 4 Slick Grid
+*/
+
+/* ----   1 Globals   ----*/
+html {
+  font-size:100%;
+} 
+body {
+  margin: 20px;
+  padding: 0;
+  background: #fff;
+  font-size:10px;
+  font-family: Arial, Helvetica, sans-serif;
+}
+.theme-small {
+  height: 16px;
+  border: 1px solid #000;
+  border-radius: 4px;
+  line-height: 16px;
+  font-size: 12px;
+  font-family: "Helvetica Neue", Arial, sans-serif;
+  font-weight: 200;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- end 1 Globals ----*/
+
+/* ----   2 Main Page Layout  ----*/
+header.dashboardHeader {
+ width: 100%;
+ height: 40px;
+ margin-top: 30px;
+ margin-bottom: 10px;
+}
+.dashboardButtons {
+  float: right;
+}
+.modalDialog.modalTarget .tourButtons > div,
+.dashboardButtons > div {
+  float: left;
+  height: 11px;
+  border: 1px solid #000;
+  border-radius: 2px;
+  margin-left: 6px;
+  line-height: 11px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-family: "Helvetica Neue", Arial, sans-serif;
+  font-weight: 200;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- end 2 Main Page Layout----*/
+
+/* ----   3 Common Controls   ----*/
+.appButtonBar {
+  float: right;
+  margin-top: 12px;
+  margin-right: 20px;
+}
+.helpButton{
+  float: right;
+    background-image: url(../XData_sprite.png);
+    width: 45px;
+    height: 45px;
+    background-repeat: no-repeat;
+    background-position: 0 -60px;
+    cursor: pointer;
+}
+.helpButton:hover {
+    background-position: -48px -60px;
+}
+#plot_wrapper {
+  width: 80%;
+}
+/* -- 3.1 Modal Dialog -- */
+
+.modalDialog {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: rgba(255,255,255,0.8);
+  z-index: 99999;
+  opacity:0;
+  -webkit-transition: opacity 400ms ease-in;
+  -moz-transition: opacity 400ms ease-in;
+  transition: opacity 400ms ease-in;
+  pointer-events: none;
+}
+.modalTarget {
+  opacity:1;
+  pointer-events: auto;
+}
+tapTool_dialog,
+.stocks_list_dialog {
+  width: 600px;
+  height: 680px;
+  margin: 30px auto;
+  background: rgba(255,255,255,0.8);
+  border: 1px solid #b0a465;
+  border-radius: 3px;
+}
+.modalDialog.modalTarget > div {
+  background: #fff;
+}
+.modalDialog.modalTarget .plotdiv {
+  margin: 0 auto;
+}
+.stocks_list_dialog .bk-bs-btn-default,
+.modalDialog.modalTarget .bk-bs-btn-default {
+  display: inline-block;
+  height: 17px;
+  margin-left: 20px;
+  margin-top: 20px;
+  padding: 6px;
+  cursor: pointer;
+}
+.stocks_list_dialog.hidden {
+  position: absolute;
+  left = -999px;
+  display: none;
+}
+.stocks_list_dialog h2
+#table_container {
+  width: 560px;
+  margin: 0 auto;
+  font-family:"Helvetica Neue", Arial, sans-serif;
+  font-weight:200;
+}
+#table_container {
+  position: relative;
+}
+.tapTool_dialog h2 {
+  width: 560px;
+  margin: 50px auto 20px auto;
+  font-family: "Helvetica Neue", Arial, sans-serif;
+  font-size: 25px;
+  line-height: 1.37em;
+  font-weight: 200;
+}
+.tapTool_dialog .bodyText {
+  width: 560px;
+  margin: 0 auto;
+  font-size: 14px;
+  line-height: 1.37em;
+}
+.stocks_list_dialog h2,
+.stocks_list_dialog .instructions {
+  height: 30px;
+  margin-top: 8px;
+  margin-left: 20px;
+  font-family:"Helvetica Neue", Arial, sans-serif;
+  font-size: 14px;
+  font-weight:200;
+  -webkit-font-smoothing:antialiased;
+}
+
+.stocks_list_dialog h2 {
+  font-size: 30px;
+}
+.tourButtons {
+  margin-left: 28px;
+}
+#loadingDiv {
+  display: none;
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255,255,255,0.8);
+}
+#loadingDiv > div {
+  position: relative;
+  top: 50%;
+  left: 50%;
+  margin-left: -2em;
+  transform: translateY(-50%);
+  width: 100%;
+  color: #666;
+  font-size: 32px;
+  font-family:"Helvetica Neue", Arial, sans-serif;
+  font-weight:200;
+  -webkit-font-smoothing:antialiased;
+}
+
+/*  3.2 Stock Selector Trigger */
+.selectorLauncher {
+  margin-left: 50px;
+  font-family: "Helvetica Neue", Arial, sans-serif;
+  font-weight: 200;
+  -webkit-font-smoothing: antialiased;
+  cursor: pointer; 
+}
+.selectorLauncher_trigger {
+  float: left;
+  display: block;
+  width: 36px;
+  height: 36px;
+  border: 1px solid #000;
+  border-top-left-radius: 6px;
+  border-bottom-left-radius: 6px;
+}
+.selectorLauncher:hover .selectorLauncher_trigger {
+  background-color: #ddd;
+}
+.selectorLauncher_trigger > span {
+  position: relative;
+  display: block;
+  top: 10px;
+  left: 50%;
+  margin-left: -12px;
+  width: 26px;
+  height: 20px;
+  background-image: url('../XData_sprite.png');
+  background-position: -49px -38px;
+  cursor: pointer; 
+}
+.selectorLauncher_label {
+  float: left;
+  height: 36px;
+  font-size: 30px;
+  padding: 0 10px;
+  border: 1px solid black;
+  border-left: none;
+}
+
+/* 3.3 Legend */
+.legendItem {
+  float: left;
+  padding-right: 18px;
+  width: 180px;
+  border-bottom: 1px solid #000;
+  cursor: pointer;
+}
+#legendContainer .legendLabelText {
+  position: relative;
+  top: -6px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 13px;
+}
+.legendItem .legend_visibilty {
+  float: left;
+  width: 14px;
+  height: 14px;
+  margin-top: 10px;
+  margin-right: 5px;
+  background-image: url(../XData_sprite.png);
+  background-position: 0 -40px; 
+}
+.legendItem.hidden {
+  color: #aaa;
+}
+.legendItem.hidden .legend_visibilty {
+  background-position: -30px -40px;
+}
+#legendContainer .legendLabel {
+  float: left;
+}
+#legendContainer .legendImage {
+  display: inline-block;
+  width: 27px;
+  height: 22px;
+  margin-top: 5px;
+  margin-left: 6px;
+  background-image: url(../XData_sprite.png);
+  background-repeat: no-repeat;
+}
+#legendContainer .legendImage.gray1 {
+    background-position: 0 0; 
+}
+#legendContainer .legendImage.orangeBars {
+    background-position: -30px 0; 
+}
+#legendContainer .legendImage.blackLine {
+    background-position: -60px 0;
+}
+#legendContainer .legendImage.gray2 {
+    background-position: -90px 0; 
+}
+#legendContainer .legendImage.yellowBars {
+    background-position: -120px 0; 
+}
+#legendContainer .legendImage.diamonds {
+    background-position: -150px 0; 
+}
+#legendContainer .legendImage.redDots {
+    background-position: -180px 0; 
+}
+#legendContainer .legendImage.circleM {
+    background-position: -210px 0; 
+}
+#legendContainer .legendImage.circleF{
+    background-position: -240px 0; 
+}
+#legendContainer .legendImage.diamondS {
+    background-position: -270px 0; 
+}
+#legendContainer .legendImage.greenDot {
+    background-position: -300px 0; 
+}
+#legendContainer .legendImage.orangeDot {
+    background-position: -330px 0; 
+}
+div#legendContainer {
+  max-width: 800px;
+  margin-top: 21px;
+  margin-left: 56px;
+}
+
+/* 3.4 Selected Region Report (#plugins_wrapper) */
+#plugins_wrapper {
+  position: absolute;
+  top: 82px;
+  left: 900px;
+  right: 0px;
+  border: 1px solid #000;
+  border-radius: 6px;
+  background-color: #EFF5EC;
+  width: 200px;
+}
+#plugins_wrapper.hidden {
+  display: none;
+}
+#plugins_wrapper .details_pointer {
+  display: inline-block;
+  content: '';
+  position: absolute;
+  top: 7px;
+  left: -40px;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 9px 40px 9px 0;
+  border-color: transparent #000 transparent transparent;
+}
+#plugins_wrapper .details_pointer:before{
+  display: inline-block;
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 2px;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 8px 38px 8px 0;
+  border-color: transparent #EFF5EC transparent transparent;
+}
+div.details-content {
+  color: rgba(20, 20, 20, 0.86);
+  font-family: Helvetica, sans-serif;
+  text-align: left;
+  font-size: 1em;
+}
+
+div#details_panel{
+  font-family: Arial, Helvetica, sans-serif;
+  text-align: left;
+  font-size: 1em;
+  padding: 10px;
+}
+div#details_panel h3 {
+  font-size: 14px;
+  margin: 0;
+  margin-bottom: 12px;
+}
+/* ---- end 3 Common Controls ----*/
+
+/* ---- 4 Slick Grid ----*/
+.modalDialog.modalTarget .bk-slick-cell,
+#table_container .bk-slick-cell {
+  margin-top: 1px;
+  border: none;
+  font-size: 12.5px;
+  letter-spacing: 0.02em;
+}
+.modalDialog.modalTarget .bk-slick-row:hover,
+.modalDialog.modalTarget .bk-slick-row:hover + div,
+#table_container .bk-slick-row:hover,
+#table_container .bk-slick-row:hover + div {
+  border-top: 2px solid #588ED7;
+  margin-top: -2px;
+  height: 23px;
+}
+.modalDialog.modalTarget .bk-slick-row:hover + div,
+#table_container .bk-slick-row:hover + div {
+  margin-top: -2px;
+  height: 23px;
+}
+.modalDialog.modalTarget .bk-slick-row:hover > div:first-child,
+#table_container .bk-slick-row:hover > div:first-child {
+  font-weight: bolder;
+}
+
+/* ---- end 4 Slick Grid ----*/
+
+#btn_help{
+  display: block;
+}
+/* -- 3.1 Modal Dialog -- */
+
+.modalDialog {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: rgba(255,255,255,0.8);
+  z-index: 99999;
+  opacity:0;
+  -webkit-transition: opacity 400ms ease-in;
+  -moz-transition: opacity 400ms ease-in;
+  transition: opacity 400ms ease-in;
+
+  pointer-events: none;
+}
+.modalTarget {
+  opacity:1;
+  pointer-events: auto;
+}
+
+.stocks_list_dialog {
+  position: relative;
+  width: 600px;
+  height: 680px;
+  margin: 30px auto;
+  background: rgba(255,255,255,0.8);
+  border: 1px solid #b0a465;
+  border-radius: 3px;
+}
+
+.modalDialog.modalTarget > div {
+  background: #fff;
+  border: 1px solid #b0a465;
+  border-radius: 3px;
+}
+.modalDialog.modalTarget .plotdiv {
+  margin: 0 auto;
+}
+/*.stocks_list_dialog > div {
+  position: relative;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 100%;
+  text-align: center;
+  color: #666;
+  font-size: 32px;
+  font-family:"Helvetica Neue", Arial, sans-serif;
+  font-weight:200;
+  -webkit-font-smoothing:antialiased;
+}*/
+.stocks_list_dialog.hidden {
+  position: absolute;
+  left = -999px;
+  display: none;
+}
+.modalDialog.modalTarget > div h2,
+.stocks_list_dialog h2,
+#table_container {
+  width: 560px;
+  margin: 0 auto;
+  font-family:"Helvetica Neue", Arial, sans-serif;
+  font-weight:200;
+}
+#table_container {
+  position: relative;
+}
+.modalDialog.modalTarget h2,
+.stocks_list_dialog h2,
+.stocks_list_dialog .instructions {
+  height: 30px;
+  margin-top: 8px;
+  margin-left: 20px;
+  font-family:"Helvetica Neue", Arial, sans-serif;
+  font-size: 14px;
+  font-weight:200;
+  -webkit-font-smoothing:antialiased;
+}
+.modalDialog.modalTarget h2,
+.stocks_list_dialog h2 {
+  font-size: 30px;
+}
+.modalDialog.modalTarget > div h2 {
+  margin-top: 14px;
+}
+#loadingDiv {
+  display: none;
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255,255,255,0.8);
+}
+#loadingDiv > div {
+  position: relative;
+  top: 50%;
+  left: 50%;
+  margin-left: -2em;
+  transform: translateY(-50%);
+  width: 100%;
+  color: #666;
+  font-size: 32px;
+  font-family:"Helvetica Neue", Arial, sans-serif;
+  font-weight:200;
+  -webkit-font-smoothing:antialiased;
+}
+
+/*  3.2 Stock Selector Trigger */
+.selectorLauncher {
+  float: left;
+  margin-left: 20px;
+  font-family: "Helvetica Neue", Arial, sans-serif;
+  font-weight: 200;
+  -webkit-font-smoothing: antialiased;
+}
+.selectorLauncher_trigger {
+  float: left;
+  display: block;
+  width: 36px;
+  height: 36px;
+  border: 1px solid #000;
+  border-top-left-radius: 6px;
+  border-bottom-left-radius: 6px;
+  cursor: pointer; 
+}
+.selectorLauncher_trigger:hover {
+  background-color: #ddd;
+}
+.selectorLauncher_trigger > span {
+  position: relative;
+  display: block;
+  top: 10px;
+  left: 50%;
+  margin-left: -12px;
+  width: 26px;
+  height: 20px;
+  background-image: url('../XData_sprite.png');
+  background-position: -49px -38px;
+  cursor: pointer; 
+}
+.selectorLauncher_label {
+  float: left;
+  height: 36px;
+  font-size: 30px;
+  color: #C8B067;
+  padding: 0 10px;
+  border: 1px solid black;
+  border-left: none;
+}
+
+/* ---- end 3 Common Controls ----*/
+
+/* ---- 4 Slick Grid ----*/
+.modalDialog.modalTarget .plotdiv,
+#table_container .plotdiv {
+    border-bottom: 1px solid #999;
+    border-right: 1px solid #999;
+      -webkit-box-shadow: inset -1px -7px 17px -8px rgba(150,150,150,1);
+  -moz-box-shadow: inset -1px -7px 17px -8px rgba(150,150,150,1);
+  box-shadow: inset -1px -7px 17px -8px rgba(150,150,150,1);
+}
+.modalDialog.modalTarget .bk-slick-viewport,
+#table_container .bk-slick-viewport {
+  border-left: 1px solid #999;
+}
+.modalDialog.modalTarget .bk-slick-cell,
+#table_container .bk-slick-cell {
+  margin-top: 1px;
+  border: none;
+  font-size: 12.5px;
+  letter-spacing: 0.02em;
+}
+.modalDialog.modalTarget .bk-slick-row:hover,
+.modalDialog.modalTarget .bk-slick-row:hover + div,
+#table_container .bk-slick-row:hover,
+#table_container .bk-slick-row:hover + div {
+  border-top: 2px solid #588ED7;
+  margin-top: -2px;
+  height: 23px;
+}
+.modalDialog.modalTarget .bk-slick-row:hover + div,
+#table_container .bk-slick-row:hover + div {
+  margin-top: -2px;
+  height: 23px;
+}
+.modalDialog.modalTarget .bk-slick-row:hover > div:first-child,
+#table_container .bk-slick-row:hover > div:first-child {
+  font-weight: bolder;
+}
+.bk-slick-row.visited {
+    font-weight:200;
+  -webkit-font-smoothing:antialiased;
+  color: #C8B067;
+}
+
+.modalDialog.modalTarget .bk-slick-header-column:hover,
+#table_container .bk-slick-header-column:hover { 
+background: #e2edc9;
+background: -moz-linear-gradient(top,  #e2edc9 0%, #c7ceb7 50%, #cfe0c3 100%);
+background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#e2edc9), color-stop(50%,#c7ceb7), color-stop(100%,#cfe0c3));
+background: -webkit-linear-gradient(top,  #e2edc9 0%,#c7ceb7 50%,#cfe0c3 100%);
+background: -o-linear-gradient(top,  #e2edc9 0%,#c7ceb7 50%,#cfe0c3 100%);
+background: -ms-linear-gradient(top,  #e2edc9 0%,#c7ceb7 50%,#cfe0c3 100%);
+background: linear-gradient(to bottom,  #e2edc9 0%,#c7ceb7 50%,#cfe0c3 100%);
+filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#e2edc9', endColorstr='#cfe0c3',GradientType=0 );
+}
+/* ---- end 4 Slick Grid ----*/
+
+div.split-tooltip {
+  /*position: absolute;*/
+  padding: 0;
+  marging: 0;
+  /*border: 1px solid rgba(255, 255, 255, 0.6);*/
+  background-color: #FAFAFF !important;
+  /*border-radius: 5px;*/
+  pointer-events: none;
+    color: rgba(20, 20, 20, 0.86);
+  font-family: Helvetica, sans-serif;
+  text-align: left;
+    font-size: 0.8em;
+    z-index: 900;
+}
+
+div.bk-tooltip {
+  position: absolute;
+  padding: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  background-color: rgba(255, 255, 255, 0.6);
+  border-radius: 5px;
+  pointer-events: none;
+    color: rgba(20, 20, 20, 0.86);
+}
+
+td.bk-tooltip-row-label {
+  color: rgba(20, 20, 20, 0.86);
+  font-family: Helvetica, sans-serif;
+  text-align: left;
+    font-size: 0.8em;
+}
+
+td.bk-tooltip-row-value {
+  color: rgba(20, 20, 20, 0.86);
+  font-family: Helvetica, sans-serif;
+    font-size: 0.8em;
+    text-align: left;
+}
+
+div.bk-widget-form-group input.bk-widget-form-input {
+    width: 50px;
+    display: inline;
+}
+
+form.bk-widget-form div input{
+    font-size: 10pt;
+}
+
+div button.bk-bs-btn-default {
+  color: #333;
+  background-color: #ccc;
+  border-color: #fff;
+}
+
+.toggle-box {
+  display: none;
+}
+
+.toggle-box + label {
+  cursor: pointer;
+  display: block;
+  font-weight: bold;
+  line-height: 21px;
+  margin-bottom: 5px;
+}
+
+.toggle-box + label + div {
+  display: none;
+  margin-bottom: 10px;
+}
+
+.toggle-box:checked + label + div {
+  display: block;
+}
+
+.toggle-box + label:before {
+  background-color: #4F5150;
+  -webkit-border-radius: 10px;
+  -moz-border-radius: 10px;
+  border-radius: 10px;
+  color: #FFFFFF;
+  content: "+";
+  display: block;
+  float: left;
+  font-weight: bold;
+  height: 20px;
+  line-height: 20px;
+  margin-right: 5px;
+  text-align: center;
+  width: 20px;
+}
+
+.toggle-box:checked + label:before {
+  content: "\2212";
+}
+
+
+div.spam-content{
+  font-family: Helvetica, sans-serif;
+  text-align: left;
+  font-size: 0.8em;
+}
+
+.container {
+  display: flex; /* or inline-flex */
+    flex-direction: row;
+
+}
+
+
+#iframe_trends{
+    margin-left: 220px;
+}
+
+/* Start by setting display:none to make this hidden.
+   Then we position it in relation to the viewport window
+   with position:fixed. Width, height, top and left speak
+   for themselves. Background we set to 80% white with
+   our animation centered, and no-repeating */
+.loading_modal {
+    display:    none;
+    position:   fixed;
+    z-index:    1000;
+    top:        0;
+    left:       0;
+    height:     100%;
+    width:      100%;
+    background: rgba( 255, 255, 255, .8 )
+                url('http://i.stack.imgur.com/FhHRx.gif')
+                50% 50%
+                no-repeat;
+}
+
+/* When the body has the loading class, we turn
+   the scrollbar off with overflow:hidden */
+body.loading_modal {
+    overflow: hidden;
+}
+
+/* Anytime the body has the loading class, our
+   modal element will be visible */
+body.loading .loading_modal {
+    display: block;
+}
+
+#info_dialog_content {
+    /*width: 900px;*/
+    height: 500px;
+    overflow-y: scroll;
+    overflow-x:hidden;
+    border: 1px solid #b0a465;
+    border-radius: 3px;
+}
+
+.modalDialog {
+  position: fixed;
+  font-family: Arial, Helvetica, sans-serif;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: rgba(255,255,255,0.8);
+  z-index: 99999;
+  opacity:0;
+  -webkit-transition: opacity 400ms ease-in;
+  -moz-transition: opacity 400ms ease-in;
+  transition: opacity 400ms ease-in;
+  pointer-events: none;
+}
+.modalDialog .close {
+  top: 21px;
+  right: 34px;
+}
+
+.modalTarget {
+  opacity:1;
+  pointer-events: auto;
+}
+
+.modalDialog > div {
+  width: 600px;
+  height: 85%;
+  position: relative;
+  margin: 5% auto;
+  border-radius: 10px;
+  background: #fff;
+  background: -moz-linear-gradient(#fff, #fff);
+  background: -webkit-linear-gradient(#fff, #fff);
+  background: -o-linear-gradient(#fff, #fff);
+}
+
+.close {
+  background: #C7C7E7;
+  color: #FFF;
+  line-height: 22px;
+  position: absolute;
+  right: 7px;
+  text-align: center;
+  top: 8px;
+  width: 24px;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.close:hover { 
+  background: #9BC8CF; 
+}
+
+.symbols-list{
+    list-style: none; /* Remove default numbering */
+    *list-style: decimal; /* Keep using default numbering for IE6/7 */
+    font: 15px 'trebuchet MS', 'lucida sans';
+    padding: 0;
+    margin-bottom: 4em;
+    text-shadow: 0 1px 0 rgba(255,255,255,.5);
+}
+
+.symbols-list li{
+    margin-bottom: 5px;
+}
+
+.symbol-row{
+    list-style: none; /* Remove default numbering */
+    *list-style: decimal; /* Keep using default numbering for IE6/7 */
+    font: 15px 'trebuchet MS', 'lucida sans';
+    padding: 0;
+    /*margin-bottom: 0.5em;*/
+    /*margin-top: 0.5em;*/
+    text-shadow: 0 1px 0 rgba(255,255,255,.5);
+
+    border-bottom: 1px solid grey;
+
+}
+
+.symbol-row-item{
+    /*border-bottom: 1px solid grey;*/
+}
+
+.symbol-field{
+    display: inline-block;
+    width: 60px;
+  /*padding-bottom: 0.5em;*/
+    /*padding-top: 0.5em;*/
+
+  height: 40px;
+}
+
+.symbol-cell{
+    font-weight: bold;
+}
+
+div.round_div {
+    border-radius: 25px;
+    /*border-radius: 15px 50px;*/
+    width: 30px;
+    text-align: center;
+}
+
+
+/* corner ribbon inspired by: https://css-tricks.com/snippets/css/corner-ribbon/ */
+.wrapper {
+  margin: -20px auto auto 50px;
+  width: 150px;
+  height: 60px;
+  background: white;
+  border-radius: 10px;
+  -webkit-box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.3);
+  -moz-box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.3);
+  position: absolute;
+  z-index: 9999;
+}
+
+.wrapper:hover {
+  margin: -15px auto auto 50px;
+  width: 150px;
+  height: 60px;
+  background: white;
+  border-radius: 10px;
+  -webkit-box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.3);
+  -moz-box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.3);
+  position: absolute;
+  z-index: 9999;
+}
+
+.ribbon-wrapper-green {
+  width: 155px;
+  height: 48px;
+  overflow: hidden;
+  position: absolute;
+  top: 13px;
+  right: -3px;
+}
+
+.ribbon-green {
+  font: bold 15px Sans-Serif;
+  color: #333;
+  text-align: center;
+  text-shadow: rgba(255,255,255,0.5) 0px 1px 0px;
+  /*-webkit-transform: rotate(45deg);*/
+  /*-moz-transform:    rotate(45deg);*/
+  /*-ms-transform:     rotate(45deg);*/
+  /*-o-transform:      rotate(45deg);*/
+  position: relative;
+  padding: 7px 0;
+  left: -5px;
+  top: 6px;
+  width: 162px;
+  background-color: #BFDC7A;
+  background-image: -webkit-gradient(linear, left top, left bottom, from(#BFDC7A), to(#8EBF45));
+  background-image: -webkit-linear-gradient(top, #BFDC7A, #8EBF45);
+  background-image:    -moz-linear-gradient(top, #BFDC7A, #8EBF45);
+  background-image:     -ms-linear-gradient(top, #BFDC7A, #8EBF45);
+  background-image:      -o-linear-gradient(top, #BFDC7A, #8EBF45);
+  color: #6a6340;
+  -webkit-box-shadow: 0px 0px 3px rgba(0,0,0,0.3);
+  -moz-box-shadow:    0px 0px 3px rgba(0,0,0,0.3);
+  box-shadow:         0px 0px 3px rgba(0,0,0,0.3);
+}
+
+.ribbon-green:before, .ribbon-green:after {
+  content: "";
+  border-top:   3px solid #6e8900;
+  border-left:  3px solid transparent;
+  border-right: 3px solid transparent;
+  position:absolute;
+  bottom: -3px;
+}
+
+.ribbon-green:before {
+  left: 0;
+}
+.ribbon-green:after {
+  right: 0;
+}​

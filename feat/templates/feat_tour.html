@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/html">
+    <head>
+        <meta charset="utf-8">
+        <title>FEAT </title>
+
+        <link rel="stylesheet" href="/static/css/feat.css" type="text/css" />
+        <link rel="stylesheet" href="/static/css/joyride-2.1.css">
+        <!--<script src="http://code.jquery.com/jquery-1.8.2.min.js"></script>-->
+
+        <script src="/static/js/jquery-1.10.1.js"></script>
+        <script src="/static/js/draper.activity_logger-2.1.1.js"></script>
+        <script src="/static/js/userale.js" charset="utf-8"></script>
+        <script src="/static/js/userale-worker.js" charset="utf-8"></script>
+
+        <script>
+
+            // INITIALIZING AND REGISTERING INSTRUMENTATION
+            // LIBRARY (Draper Logging Library)
+            // [updated] reference: https://xd-web-proxy.data-tactics-corp.com/wiki/pages/viewpage.action?pageId=15566031
+
+            // Instantiate Logger
+           var ale = new userale({ 
+                loggingUrl: 'http://10.1.93.208', //The url of the User-ALE logging server.
+                toolName: 'FEAT', //The name of your tool
+                toolVersion: '0.1', //The semantic version of your tool
+                elementGroups: [ //A list of element groups used in your tool (see below)
+                  'graph_group',
+                  'input_group',
+                  'table_group',
+                    'query_group',
+                ],
+                workerUrl: '/static/js/userale-worker.js', //The location of the User-ALE webworker file
+                debug: true, //Whether to log messages to console
+                sendLogs: true //Whether or not to send logs to the server (useful during testing)
+            });
+
+            // Register Logger
+            ale.register();
+
+
+            // set flag that will be used to regulate tap tool OpenURL issue
+            window.last_ts = Date.now()
+
+            // create a global var that stores the currently selected symbol
+
+
+
+        </script>
+
+    </head>
+    <body>
+        <header class="dashboardHeader">
+            <div class="dashboardButtons">
+
+                <div class="plotdiv bk-bs-btn bk-bs-btn-default" id="btn_help" onclick="open_help_symbol();">
+                    Help
+                </div>
+                <div class="plotdiv bk-bs-btn bk-bs-btn-default" id="tourBtn">
+                    Tour
+                </div>
+            </div>
+        </header>
+
+        <div class="dashboardBody">
+            <div id="plot_wrapper">
+                <div id="legendContainer"></div>
+            </div>
+
+
+        </div>
+            <div id="plugins_wrapper" class="hidden">
+                <div id="details_panel"></div>
+                <span class="details_pointer"></span>
+            </div>
+        <div id="info_dialog" class="modalDialog">
+            <div>
+                <a id="close_info_dialog" href="#" title="Close" class="close" onclick="$('#info_dialog').removeClass('modalTarget');">X</a>
+                <div id="info_dialog_content">
+                    <h2>Modal Box</h2>
+                    <p>This is a sample modal box that can be created using the powers of CSS3.</p>
+                    <p>You could do a lot of things here like have a pop-up ad that shows when your website loads, or create a login/register form for users.</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="stocks_list_dialog" class="modalDialog">
+            <div>
+                <a id="close_stocks_list_dialog" href="#" title="Close" class="close" onclick="$('#stocks_list_dialog').removeClass('modalTarget');">X</a>
+                <h2>Select a symbol:</h2>
+                <div id="table_container">
+                    <p>Click on any symbol to view it in the dashboard.</p>
+                 </div>
+                <div id="clearVisited_button" class="bk-bs-btn-default theme-small">
+                    Clear Visited Symbols
+                </div>
+             </div>
+        </div>
+
+         <div id="help_dialog" class="modalDialog">
+             <div  style="width: 800px;">
+                 <a id="close_help_dialog" href="#" title="Close" class="close" onclick="$('#help_dialog').removeClass('modalTarget');">X</a>
+                 <div>
+                 <img src="/static/images/FEAT_help_img.jpg" alt="help"  width="750" height="500" >
+                 </div>
+                 <div class="tourButtons">
+                    <div class="bk-bs-btn bk-bs-btn-default" id="btn_open_symbol_help" onclick="open_help_open_symbol();">Need help selecting a symbol?</div>
+                     <div class="bk-bs-btn bk-bs-btn-default tourLink">Take a Tour</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="help_open_symbol_dialog" class="modalDialog">
+             <div  style="width: 800px;">
+                 <a id="close_help_open_symbol_dialog" href="#" title="Close" class="close" onclick="$('#help_open_symbol_dialog').removeClass('modalTarget');">X</a>
+                 <div>
+                 <img src="/static/images/FEAT_help_img_symbol_select.jpg" alt="help"  width="750" height="500" >
+                 </div>
+                <div class="tourButtons">
+                     <div class="bk-bs-btn bk-bs-btn-default" onclick="open_help_symbol();">Back to General Help</div>
+                     <div class="bk-bs-btn bk-bs-btn-default tourLink">Take a Tour</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="loading_modal">
+            <!-- Place at bottom of page -->
+            <div style="position: fixed; left: 5%; top: 92%;">
+                <a onclick="window.prev_loaded_flag = 'loaded';">CLOSE</a>
+            </div>
+        </div>
+
+
+    <!-- Tip Content -->
+    <ol id="joyRideTipContent">
+        <li data-button="Next: Detail Page" class="custom">
+            <h3>Symbol Selection Table</h3>
+            <p>Clicking on a row will display the detailed information for the chosen symbol. The columns are sortable by clicking on the column header. Clicking once sorts in ascending order. Click again to change the order to descending.
+            <br>
+            The columns are:
+                <ul>
+                    <li><b>Symbol:</b> Market symbol for security.</li>
+                    <li><b>Volume Ratio</b> Indicates "spikiness" of trade volume. A large number indicates a bigger swing in volume.</li>
+                    <li><b>Risk:</b> Intersection of price spikes and promotional activity. Higher number indicates more promotional activity around price spikes.</li>
+                    <li><b>Spams:</b> Number of spam emails on symbol during period.</li>
+                </ul>
+                <img src="/static/images/tour/symbol_select.png" />
+            </p>
+        </li>
+        <li data-button="Next: Overiew Graph">
+            <h3>Detail Page</h3>
+            <p>The Detail Page shows additional information for each symbol. If the information is availabe the following are shown:
+            <br>
+                <ul>
+                    <li><b>Overview Graph</b> Top graph that shows concise picture of the information over time and period of interest.</li>
+                    <li><b>Detail Graph</b> Bottom, zoomable graph that shows the information with more details available via mouse-overs and by clicking on points of interest.</li>
+                </ul>
+                <img src="/static/images/tour/detail_page_overview.png" />
+            </p>
+        </li>
+        
+        <li data-button="Next: Zoom on Region">
+            <h3>Overview Graph</h3>
+            <p>The overview graph never changes scales and always show the different types of information. The graph shows:
+            <br>
+                <ul>
+                    <li><b>Close Price</b> - Line showing the closing price of the security</li>
+                    <li><b>Region of Interest</b> - Yellow area <span class="legendImage orangeBars"></span>where possible pump and dump activity was detected by the algorithms.</li>
+                    <li><b>Spam</b> - (Red dot <span class="legendImage redDots"></span>) placed on price line for each promotional spam</li>
+                    <li><b>News</b> (Green dot <span class="legendImage greenDots"></span>) news stories by analysts</li>
+                    <li><b>SEC Filings</b> (Blue Diamond <span class="legendImage diamond"></span>) EDGAR filing</li>
+                </ul>
+                <img src="/static/images/tour/overview_graph.png" />
+                <br>
+            </p>
+        </li>
+        <li></li>
+        <li data-button="Next: Detail Graph" >
+            <h3>Zoom on Region</h3>
+            <p>To zoom in a particular region, click and drag on the overview graph. The zoomed region will be shaded in a light blue and the large detail graph will only show that region.
+            <br>
+                <ul>
+                    <li><img src="/static/images/tour/zoomed_overview.png" /></li>
+                </ul>
+            </p>
+        </li>
+         <li data-button="Next: Mouse-Overs" class="custom">
+            <h3>Detail Graph</h3>
+            <p>The detail graph shows the same information as the smaller overview graph but allows more interaction with the data. Addition actions possible in the detail graph are:
+                <br>
+                <ul>
+                    <li><b>Scroll Zoom</b> - use the mouse wheel to zoom in and out of a time period.</li>
+                    <li><b>Mouse Over</b> - mouseover filing diamionds, news dots, and forum dots for more information on the respective underlying filing, news, or forum</li>
+                    <li><b>Click for more detail</b> - For even more detail click on spam, news, or forum dots. A window will open with more information.</li>
+                    <li><b>Turn Off/On</b> - Click on the checkboxes in the legend to hide/unhide the corresponding data on the detail graph.</li>
+                    <li><b>Pan</b> - Click on the graph and move the mouse to move the graph. Useful when zoomed in.</li>
+                </ul>
+                <br>
+                <img src="/static/images/tour/detail_graph.png" />
+            </p>
+         </li>
+         <li data-button="Next: Tool Bar" nextButtn=true previousButton=true>
+            <h3>Mouse-Overs</h3>
+            <p>Mouse over the following for a summary of underlying detail.
+                <br><br><b>Filing Diamond</b>
+                <br><img src="/static/images/tour/mouse_over_edgar.png" />
+                <br><br><b>News Dot (green)</b> <br><img src="/static/images/tour/mouse_over_news.png" />
+                <br><br><b>Forum Dot (orange)</b> <br><img src="/static/images/tour/mouse_over_forum.png" />
+            </p>
+         </li>
+         <li data-button="Next: Tools">
+            <h3>Toolbar</h3>
+            <p>Different tools are available to use in conjunction with the detail graph. When a tool is active there is a blue vertical line to the right of the tool. Mouse-over a tool to see what the name of the too.
+            <br>
+            <img src="/static/images/tour/tool_bar.png" />
+            </p>
+         </li>
+         <li data-button="Next: Hover Tool">
+            <h3>Tools</h3>
+            <p>The following tools are available in the current version.
+                <br><br><b>Pan</b> - <img src="/static/images/tour/tool_pan.png" /> - Click-hold on the detail graph allows you to move the graph. Clicking on this tool deactivates the Box Zoom tool.
+                <br><br><b>Box Zoom - </b>  <img src="/static/images/tour/tool_box_zoom.png" /> - Using the Box Zoom allows you to click and drag on an area of the detail graph and have the gaph zoom to that region. Clicking on this tool deactivates the Pan tool.
+                <br><br><b>Wheel Zoom </b> - <img src="/static/images/tour/tool_wheel_zoom.png" /> The wheel zoom allows zooming in/out on the dates (x-axis) with the mouse wheel if the cursor is over the detail graph.
+                <br><br><b>Tap</b> - <img src="/static/images/tour/tool_tap.png" /> -Enables showing more detail when clicking on a spam, forum, or news symbol. This tool is always active.
+                <br><br><b>Reset</b> - <img src="/static/images/tour/tool_reset.png" /> - Click on this tool to reset the Detail Graph to match the time range of the overview graph.
+                <br><br><b>Hover</b> - <img src="/static/images/tour/tool_hover.png" /> - This tool enables and disables showing information for different sources when hovering over the symbol. If too much is being shown when hovering over a group of dots you can use this tool to disable showing certain types of information, such as filing information.
+            </p>
+         </li>
+         <li data-button="Next: Spam/Forum Detail">
+            <h3>Hover Tool</h3>
+            <p>Clicking on the hover tool allows the enabling and disabling of various hover information.
+                <br>
+                <img src="/static/images/tour/tool_hover_expanded.png" />
+                <br> The different checkboxes enable/diable as follows:
+                <ul>
+                    <li><b>Crosshair</b> - Enables/Disables the horizontal and virtical lines the follow the mouse </li>
+                    <li><b>Hover Tool</b> - Enables/Disables the display of closing mouse-over information, such as price, for the symbol</li>
+                </ul>
+            </p>
+         </li>
+         <li data-button="Next: Expanded Spam/Forum Detail">
+            <h3>Spam/Forum Detail</h3>
+            <p>Clicking near a spam, forum, or news dot will pop up a window with additional information. The nearby spams, forum, and news entries will be collapsed. Clicking on the "Plus" sign will expand/collapse the information.
+            <br>
+            <img src="/static/images/tour/spam_forum_detail.png" />
+            </p>
+         </li>
+         <li data-button="Next: Symbol Picker">
+            <h3>Expanded Spam/Forum Detail</h3>
+            <p>Clicking on a plus sign shows you text of associated the spam email, the forum posting, or the news article by an analyst.
+            <br>
+            <img src="/static/images/tour/spam_expanded.png" />
+            </p>
+         </li>
+         <li data-button="Next: Help Button">
+            <h3>Symbol Picker</h3>
+            <p>To go to a new symbol click on the symbol pick at the upper left of the page. Clicking on the Symbol Picker will bring up the Symbol Selection Table.
+            <br>
+            <img src="/static/images/tour/symbol_picker.png" />
+            </p>
+         </li>
+         <li data-button="Next: End">
+            <h3>Help Button</h3>
+            <p>To Get back to this help click on the Help button at the upper right of the page..
+            <br>
+            <img src="/static/images/tour/need_help_button.png" />
+            </p>
+         </li>
+    </ol>
+
+    <!-- Run the plugin -->
+        <script src="/static/js/jquery-1.10.1.js"></script>
+        <script type="text/javascript" src="/static/js/jquery.cookie.js"></script>
+        <script type="text/javascript" src="/static/js/modernizr.mq.js"></script>
+        <script type="text/javascript" src="/static/js/jquery.joyride-2.1.js"></script>
+
+
+        <script>
+            function hook_logger() {
+
+                    $('#joyRideTipContent').joyride({
+                      autoStart : true,
+                      postStepCallback : function (index, tip) {
+                      if (index == 2) {
+                        $(this).joyride('set_li', false, 1);
+                      }
+                    },
+                    modal:true,
+                    expose: true
+                    });
+
+              $('.tourLink').click(function(){
+                  $('#help_dialog').removeClass('modalTarget');
+                  $('#help_open_symbol_dialog').removeClass('modalTarget');
+                   $("#joyRideTipContent").joyride({
+                    /* Options will go here */
+                        modal:true,
+                        expose:true
+                    });
+                });
+
+
+              $('#tourBtn').click(function(){
+                   $("#joyRideTipContent").joyride({
+                    /* Options will go here */
+                        modal:true,
+                        expose:true
+                    });
+                });
+            }
+            hook_logger();
+
+            $("#joyRideTipContent").joyride({
+                    /* Options will go here */
+                        modal:true,
+                        expose:true
+                    });
+        </script>
+    </body>
+</html>

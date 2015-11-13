@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/html">
+    <head>
+        <meta charset="utf-8">
+        <title>FEAT</title>
+
+        <link rel="stylesheet" href="/static/css/feat.css" type="text/css" />
+
+        <script src="{{ app_url }}"></script>
+        <script src="http://code.jquery.com/jquery-1.8.2.min.js"></script>
+        <script src="/static/js/draper.activity_logger-2.1.1.js"></script>
+        <script src="/static/js/userale.js" charset="utf-8"></script>
+        <script src="/static/js/userale.js" charset="utf-8"></script>
+
+        <script>
+            window._bokeh_onload_callbacks = [window.TableBoard.main];
+            // INITIALIZING AND REGISTERING INSTRUMENTATION
+            // LIBRARY (Draper Logging Library)
+            // [updated] reference: https://xd-web-proxy.data-tactics-corp.com/wiki/pages/viewpage.action?pageId=15566031
+            // Instantiate Logger
+           var ale = new userale({ 
+                loggingUrl: 'http://10.1.93.208', //The url of the User-ALE logging server.
+                toolName: 'FEAT', //The name of your tool
+                toolVersion: '0.1', //The semantic version of your tool
+                elementGroups: [ //A list of element groups used in your tool (see below)
+                  'graph_group',
+                  'input_group',
+                  'table_group',
+                    'query_group',
+                ],
+                workerUrl: '/static/js/userale-worker.js', //The location of the User-ALE webworker file
+                debug: true, //Whether to log messages to console
+                sendLogs: true //Whether or not to send logs to the server (useful during testing)
+            });
+            // Register Logger
+            ale.register();
+
+            // set flag that will be used to regulate tap tool OpenURL issue
+            window.last_ts = Date.now()
+
+            // REGISTER LOADING WINDOW FUNCTIONS
+            $body = $("body");
+
+            function check_loaded() {
+                //var loaded = $('.bk-ui-widget-content').length;
+                var loaded = $('select[name=symbol_filter]')[0].id;
+                console.log("CHECKING" + window.prev_loaded_flag + '   ' + loaded);
+
+                if (loaded!=window.prev_loaded_flag){
+                    $("body").removeClass("loading");
+                    window.prev_loaded_flag = loaded;
+                }else{
+                    setTimeout(check_loaded, 1000);
+                }
+            }
+        </script>
+
+
+    </head>
+    <body style="background-color: white;">
+        {{ symbol|indent(8)|safe }}
+        {{ content|indent(8)|safe }}
+    </body>
+</html>

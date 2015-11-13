@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/html">
+    <head>
+        <meta charset="utf-8">
+        <title>FEAT</title>
+
+        <link rel="stylesheet" href="/static/css/feat.css" type="text/css" />
+
+        <script src="http://code.jquery.com/jquery-1.8.2.min.js"></script>
+        <script src="/static/js/draper.activity_logger-2.1.1.js"></script>
+        <script src="/static/js/userale.js" charset="utf-8"></script>
+        <script src="/static/js/userale-worker.js" charset="utf-8"></script>
+
+        <script>
+
+            // INITIALIZING AND REGISTERING INSTRUMENTATION
+            // LIBRARY (Draper Logging Library)
+            // [updated] reference: https://xd-web-proxy.data-tactics-corp.com/wiki/pages/viewpage.action?pageId=15566031
+
+            // Instantiate Logger
+           var ale = new userale({ 
+                loggingUrl: 'http://10.1.93.208', //The url of the User-ALE loggingUrlng server.
+                toolName: 'FEAT', //The name of your tool
+                toolVersion: '0.1', //The semantic version of your tool
+                elementGroups: [ //A list of element groups used in your tool (see below)
+                  'graph_group',
+                  'input_group',
+                  'table_group',
+                    'query_group',
+                ],
+                workerUrl: '/static/js/userale-worker.js', //The location of the User-ALE webworker file
+                debug: true, //Whether to log messages to console
+                sendLogs: true //Whether or not to send logs to the server (useful during testing)
+            });
+
+            // Register Logger
+            ale.register();
+
+
+            // set flag that will be used to regulate tap tool OpenURL issue
+            window.last_ts = Date.now()
+
+            // REGISTER LOADING WINDOW FUNCTIONS
+            $body = $("body");
+
+            function check_loaded() {
+                console.log('checking loaded.')
+                //var loaded = $('.bk-ui-widget-content').length;
+                var loaded = $('.bk-ui-slider')[0].id;
+                console.log("CHECKING" + window.prev_loaded_flag + '   ' + loaded);
+
+                if (loaded!=window.prev_loaded_flag){
+                    console.log('closing');
+                    $("body").removeClass("loading");
+                    window.prev_loaded_flag = loaded;
+
+                }else{
+                    setTimeout(check_loaded, 1000);
+                }
+            }
+
+            var getSelectedSymbols = function() {
+                if (sessionStorage.selectedSymbols){
+                    return JSON.parse(sessionStorage.getItem('selectedSymbols'));
+                }
+                else {
+                    return false;
+                }
+            }
+
+            var clearSelectedSymbols = function() {
+                sessionStorage.removeItem('selectedSymbols');
+            }
+
+            window.onload = function() {
+                (function check_loaded() {
+                    if (!!document.getElementsByClassName('bk-slick-viewport')[0]){
+                        checkForVisitedSymbols();
+                    }else{
+                        setTimeout(check_loaded, 500);
+                    }
+                })();
+            }
+            function checkForVisitedSymbols () {
+                
+                var tableBody = document.getElementById('table_container').getElementsByClassName('bk-slick-viewport')[0];
+                var clearVisitedButton = document.getElementById('clearVisited_button');
+
+                $(".bk-slick-header-sortable").click(function() {
+                    window.setTimeout(function() {
+                            markVisitedLinks();
+                        }, 100);
+
+                    msg = {
+                        activity: 'select',
+                        action: 'click',
+                        elementType: 'datagrid',
+                        elementId: 'table_stocks_rank',
+                        elementGroup: 'table_group',
+                        source: 'user',
+                        tags: ['query', 'sort ' + this.textContent]
+                        //meta: 'sort ' + this.textContent
+                    };
+                    console.log(msg);
+                    ale.log(msg);
+
+                });
+
+                clearVisited_button.onclick = function() {
+                    clearSelectedSymbols();
+                    unmarkVisitedLinks();
+
+                    msg = {
+                        activity: 'deselect',
+                        action: 'click',
+                        elementType: 'button',
+                        elementId: 'clearVisited_button',
+                        elementGroup: 'query_group',
+                        source: 'user',
+                        tags: ['query']
+                    };
+                    console.log(msg);
+                    ale.log(msg);
+                }
+
+                function markVisitedLinks() {
+                    if (getSelectedSymbols()) {
+                        var selectedSymbolsList = getSelectedSymbols();
+                        var sldList = $('.bk-slick-row');
+                        
+                        for (var s = 0; s < sldList.length; s++) {
+                            var symbolLine = sldList[s];
+                            var symbolName = symbolLine.getElementsByTagName('div')[0].innerHTML;
+                            if (selectedSymbolsList.indexOf(symbolName) != -1 && symbolLine.className.indexOf('visited') == -1) {
+                                symbolLine.className += " visited";
+                            }
+                        }
+                    }
+                }
+
+                markVisitedLinks();
+
+                function unmarkVisitedLinks() {
+                    var sldList = $('.bk-slick-row');
+                    var selectedSymbolsList = getSelectedSymbols();
+                    for (var s = 0; s < sldList.length; s++) {
+                        var symbolLine = sldList[s];
+                        var symbolName = symbolLine.getElementsByTagName('div')[0].innerHTML;
+                        if (symbolLine.className.indexOf("visited") != -1) {
+                            $(symbolLine).removeClass("visited");
+                        }
+                    }
+                }
+
+                window.scrolling = false;
+
+                var checkScrolling = function() {
+
+                    var isScrolling = false;
+                    tableBody.onscroll = function() {
+                        isScrolling = true;
+
+                        if (window.scrolling==false){
+                                msg = {
+                                activity: 'perform',
+                                action: 'scroll',
+                                elementType: 'datagrid',
+                                elementId: 'table_stocks_rank',
+                                elementGroup: 'table_group',
+                                source: 'user',
+                                tags: ['query']
+                            };
+                            console.log(msg);
+                            ale.log(msg);
+                        }
+                        window.scrolling = true;
+
+                    }
+                    var scrollCheckInterval = window.setInterval(function(){
+                            if (isScrolling == false) { //if we stopped scrolling
+
+                                //do the function
+                                markVisitedLinks();
+                                window.clearInterval(scrollCheckInterval);
+
+                                //reset the scrolling listener
+                                tableBody.onscroll = function() {
+                                    checkScrolling();
+                                }
+
+                                msg = {
+                                    activity: 'leave',
+                                    action: 'scroll',
+                                    elementType: 'datagrid',
+                                    elementId: 'table_stocks_rank',
+                                    elementGroup: 'table_group',
+                                    source: 'user',
+                                    tags: ['query']
+                                };
+                                console.log(msg);
+                                ale.log(msg);
+                                window.scrolling = false;
+                            }  
+                            isScrolling = false;
+
+                        }, 200);
+                }
+
+                tableBody.onscroll = function() {
+                    checkScrolling();
+                }
+            }
+
+
+        </script>
+
+
+    {{ plot_resources|indent(4)|safe }}
+
+    {{ plot_script|indent(4)|safe }}
+
+
+    </head>
+    <body style="background-color: white;">
+
+        <div id="openingDialog" class="stocks_list_dialog">
+<!--                 <a id="close_info_dialog" href="#" title="Close" class="close" onclick="$('#stocks_list_dialog').removeClass('modalTarget');">X</a> -->
+            <h2>Select a symbol:</h2>
+            <div class="instructions">
+                Click on any symbol to view it in the dashboard.
+            </div>
+            <div id="table_container">
+                {{ extra_divs.table_ranks|indent(4)|safe }}
+                <div id="loadingDiv">
+                    <div>Loading</div>
+                </div>
+            </div>
+            <div id="clearVisited_button" class="bk-bs-btn-default theme-small">
+                Clear Visited Symbols
+            </div>
+        </div>
+    </body>
+</html>

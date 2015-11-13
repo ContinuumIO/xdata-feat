@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/html">
+    <head>
+        <meta charset="utf-8">
+        <title>FEAT - {{ symbol }}</title>
+
+        <link rel="stylesheet" href="/static/css/feat.css" type="text/css" />
+        <link rel="stylesheet" href="/static/css/joyride-2.1.css">
+        <!--<script src="http://code.jquery.com/jquery-1.8.2.min.js"></script>-->
+
+        <script src="/static/js/jquery-1.10.1.js"></script>
+        <script src="/static/js/draper.activity_logger-2.1.1.js"></script>
+        <script src="/static/js/userale.js" charset="utf-8"></script>
+        <script src="/static/js/userale-worker.js" charset="utf-8"></script>
+
+        <script>
+
+            // INITIALIZING AND REGISTERING INSTRUMENTATION
+            // LIBRARY (Draper Logging Library)
+            // [updated] reference: https://xd-web-proxy.data-tactics-corp.com/wiki/pages/viewpage.action?pageId=15566031
+
+            // Instantiate Logger
+           var ale = new userale({ 
+                loggingUrl: 'http://10.1.93.208', //The url of the User-ALE logging server.
+                toolName: 'FEAT', //The name of your tool
+                toolVersion: '0.1', //The semantic version of your tool
+                elementGroups: [ //A list of element groups used in your tool (see below)
+                  'graph_group',
+                  'input_group',
+                  'table_group',
+                    'query_group',
+                    'help_group',
+                ],
+                workerUrl: '/static/js/userale-worker.js', //The location of the User-ALE webworker file
+                debug: true, //Whether to log messages to console
+                sendLogs: true //Whether or not to send logs to the server (useful during testing)
+            });
+
+            // Register Logger
+            ale.register();
+
+
+            // set flag that will be used to regulate tap tool OpenURL issue
+            window.last_ts = Date.now()
+
+            // create a global var that stores the currently selected symbol
+            window.selected_symbol = "{{ symbol }}";
+
+            var getSelectedSymbols = function() {
+                return JSON.parse(sessionStorage.getItem('selectedSymbols'));
+            }
+
+            var pushToSelectedSymbols = function(newSymbol) {
+                if (!sessionStorage.selectedSymbols) {
+                    var selected_symbols = JSON.stringify([' ']);
+                    sessionStorage.setItem('selectedSymbols', selected_symbols);
+                }
+                var selectedSymbols = getSelectedSymbols();
+                if (selectedSymbols.indexOf(newSymbol) == -1) {
+                    selectedSymbols.push(newSymbol);
+                    sessionStorage.setItem('selectedSymbols', JSON.stringify(selectedSymbols) );
+                }
+            }
+
+            var clearSelectedSymbols = function() {
+                sessionStorage.removeItem('selectedSymbols');
+            }
+
+            // REGISTER LOADING WINDOW FUNCTIONS
+            $body = $("body");
+
+            function check_loaded() {
+
+                var loaded = $('.bk-ui-slider')[0].id;
+                console.log("CHECKING" + window.prev_loaded_flag + '   ' + loaded);
+
+                if (loaded!=window.prev_loaded_flag){
+                    console.log('closing');
+                    $("body").removeClass("loading");
+                    window.prev_loaded_flag = loaded;
+
+                }else{
+                    setTimeout(check_loaded, 1000);
+                }
+            }
+
+            function close_select_symbol(){
+                msg = {
+                    activity: 'perform',
+                    action: 'click',
+                    elementType: 'button',
+                    elementId: 'close_info_dialog',
+                    elementGroup: 'query_group',
+                    source: 'user',
+                    tags: ['open', 'query']
+                };
+                console.log(msg);
+                ale.log(msg);
+
+                $('#stocks_list_dialog').removeClass('modalTarget');
+                var msg = {
+                    activity: 'close',
+                    action: 'hide',
+                    elementId: 'close_info_dialog',
+                    elementType: 'dialog_box',
+                    elementSub: 'panel',
+                    elementGroup: 'query_group',
+                    source: 'system'
+                };
+                console.log(msg);
+                ale.log(msg);
+            }
+
+            function close_panel_info_dialog(){
+                msg = {
+                    activity: 'perform',
+                    action: 'click',
+                    elementType: 'button',
+                    elementId: 'btn_close_info_dialog',
+                    elementGroup: 'query_group',
+                    source: 'user',
+                    tags: ['open', 'query']
+                };
+                console.log(msg);
+                ale.log(msg);
+
+                $('#info_dialog').removeClass('modalTarget');
+
+                var msg = {
+                        activity: 'close',
+                        action: 'hide',
+                        elementId: 'tapToolInfoDialog',
+                        elementType: 'dialog_box',
+                        elementSub: 'panel',
+                        elementGroup: 'query_group',
+                        source: 'system'
+                    };
+                console.log(msg);
+                ale.log(msg);
+
+                window.last_selected_dt = undefined;
+            }
+
+            function open_select_symbol(){
+                msg = {
+                    activity: 'perform',
+                    action: 'click',
+                    elementType: 'button',
+                    elementId: 'btn_select_new_symbol',
+                    elementGroup: 'query_group',
+                    source: 'user',
+                    tags: ['open', 'query']
+                };
+                console.log(msg);
+                ale.log(msg);
+
+                $('#stocks_list_dialog').addClass('modalTarget');
+
+                  //Open Select Dialog Showing
+                  var msg = {
+                    activity: 'open',
+                    action: 'show',
+                    elementId: 'stocks_list_dialog',
+                    elementType: 'dialog_box',
+                    elementSub: 'panel',
+                    elementGroup: 'query_group',
+                    source: 'system'
+                    //meta: 'panel select symbol'
+                  };
+                console.log(msg);
+                  ale.log(msg);
+
+                var tableBody = document.getElementById('table_container').getElementsByClassName('bk-slick-viewport')[0];
+                var clearVisitedButton = document.getElementById('clearVisited_button');
+
+                clearVisited_button.onclick = function() {
+                    clearSelectedSymbols();
+                    unmarkVisitedLinks();
+
+                    msg = {
+                        activity: 'deselect',
+                        action: 'click',
+                        elementType: 'button',
+                        elementId: 'clearVisited_button',
+                        elementGroup: 'query_group',
+                        source: 'user',
+                        tags: ['query']
+                    };
+                    console.log(msg);
+                    ale.log(msg);
+
+                }
+
+                $("#table_container .bk-slick-header-sortable").click(function() {
+                    window.setTimeout(function() {
+                        markVisitedLinks();
+                    }, 100);
+
+                    msg = {
+                        activity: 'perform',
+                        action: 'click',
+                        elementType: 'datagrid',
+                        elementId: 'table_stocks_rank',
+                        elementSub: "header",
+                        elementGroup: 'table_group',
+                        source: 'user',
+                        tags: ['query', 'sort', this.textContent]
+                        //meta: 'sort ' + this.textContent
+                    };
+                    console.log(msg);
+                    ale.log(msg);
+
+                });
+
+                function markVisitedLinks() {
+                    var sldList = $('#stocks_list_dialog .bk-slick-row');
+                    var selectedSymbolsList = getSelectedSymbols();
+                    for (var s = 0; s < sldList.length; s++) {
+                        var symbolLine = sldList[s];
+                        var symbolName = symbolLine.getElementsByTagName('div')[0].innerHTML;
+                        if (selectedSymbolsList.indexOf(symbolName) != -1 && symbolLine.className.indexOf('visited') == -1) {
+                            symbolLine.className += " visited";
+                        }
+                    }
+                }
+
+                function unmarkVisitedLinks() {
+                    var sldList = $('#stocks_list_dialog .bk-slick-row');
+                    var selectedSymbolsList = getSelectedSymbols();
+                    for (var s = 0; s < sldList.length; s++) {
+                        var symbolLine = sldList[s];
+                        var symbolName = symbolLine.getElementsByTagName('div')[0].innerHTML;
+                        if (symbolLine.className.indexOf("visited") != -1) {
+                            $(symbolLine).removeClass("visited");
+                        }
+                    }
+                }
+
+
+                markVisitedLinks();
+                window.scrolling = false;
+
+                var checkScrolling = function() {
+                    var isScrolling = false;
+                    
+                    tableBody.onscroll = function() {
+                        isScrolling = true;
+
+                        if (window.scrolling==false){
+                                msg = {
+                                activity: 'perform',
+                                action: 'scroll',
+                                elementType: 'datagrid',
+                                elementId: 'table_stocks_rank',
+                                elementGroup: 'table_group',
+                                source: 'user',
+                                tags: ['query']
+                            };
+                            console.log(msg);
+                            ale.log(msg);
+                        }
+                        window.scrolling = true;
+                    }
+                    var scrollCheckInterval = window.setInterval(function(){
+                            if (isScrolling == false) { //if we stopped scrolling
+
+                                //do the function
+                                markVisitedLinks();
+                                window.clearInterval(scrollCheckInterval);
+
+                                //reset the scrolling listener
+                                tableBody.onscroll = function() {
+                                    checkScrolling();
+                                }
+
+                                msg = {
+                                    activity: 'leave',
+                                    action: 'scroll',
+                                    elementType: 'datagrid',
+                                    elementId: 'table_stocks_rank',
+                                    elementGroup: 'table_group',
+                                    source: 'user',
+                                    tags: ['query']
+                                };
+                                console.log(msg);
+                                ale.log(msg);
+                                window.scrolling = false;
+                            }  
+                            isScrolling = false;
+                        }, 200);
+                }
+
+                tableBody.onscroll = function() {
+                    checkScrolling();
+                }
+
+            }
+
+            function open_help_symbol(){
+                $('#help_open_symbol_dialog').removeClass('modalTarget');
+                $('#help_dialog').addClass('modalTarget');
+                msg = {
+                    activity: 'select',
+                    action: 'click',
+                    elementType: 'button',
+                    elementId: 'btn_help',
+                    elementGroup: 'query_group',
+                    source: 'user',
+                    tags: ['open', 'query']
+                };
+                console.log(msg);
+                ale.log(msg);
+
+                var msg = {
+                    activity: 'open',
+                    action: 'expand',
+                    elementId: 'help_dialog',
+                    elementType: 'dialog_box',
+                    elementSub: 'panel',
+                    elementGroup: 'query_group',
+                    source: 'system'
+                };
+                console.log(msg);
+                ale.log(msg);
+            }
+
+            function close_help_dialog(){
+                $('#help_open_symbol_dialog').removeClass('modalTarget');
+                $('#help_dialog').removeClass('modalTarget');
+                msg = {
+                    activity: 'select',
+                    action: 'click',
+                    elementType: 'button',
+                    elementId: 'close_help_dialog',
+                    elementGroup: 'query_group',
+                    source: 'user',
+                    tags: ['open', 'query']
+                };
+                console.log(msg);
+                ale.log(msg);
+
+                var msg = {
+                    activity: 'close',
+                    action: 'hide',
+                    elementId: 'help_dialog',
+                    elementType: 'dialog_box',
+                    elementSub: 'panel',
+                    elementGroup: 'query_group',
+                    source: 'system'
+                };
+                console.log(msg);
+                ale.log(msg);
+            }
+
+            function open_help_open_symbol(){
+                $('#help_dialog').removeClass('modalTarget');
+                $('#help_open_symbol_dialog').addClass('modalTarget');
+                msg = {
+                    activity: 'select',
+                    action: 'click',
+                    elementType: 'button',
+                    elementId: 'btn_help_open_symbol',
+                    elementGroup: 'query_group',
+                    source: 'user',
+                    tags: ['open', 'query']
+                };
+                ale.log(msg);
+
+                var msg = {
+                    activity: 'open',
+                    action: 'expand',
+                    elementId: 'help_open_symbol_dialog',
+                    elementType: 'dialog_box',
+                    elementSub: 'panel',
+                    elementGroup: 'query_group',
+                    source: 'system'
+                };
+                console.log(msg);
+                ale.log(msg);
+
+            }
+
+            function close_help_open_symbol(){
+                $('#help_dialog').removeClass('modalTarget');
+                $('#help_open_symbol_dialog').removeClass('modalTarget');
+                msg = {
+                    activity: 'select',
+                    action: 'click',
+                    elementType: 'button',
+                    elementId: 'close_help_symbol_dialog',
+                    elementGroup: 'query_group',
+                    source: 'user',
+                    tags: ['close', 'query']
+                };
+                ale.log(msg);
+
+                var msg = {
+                    activity: 'close',
+                    action: 'hide',
+                    elementId: 'help_open_symbol_dialog',
+                    elementType: 'dialog_box',
+                    elementSub: 'panel',
+                    elementGroup: 'query_group',
+                    source: 'system'
+                };
+                console.log(msg);
+                ale.log(msg);
+            }
+
+            function get_source_by_tag(sourcetag){
+                var sources = Bokeh.Collections('ColumnDataSource').models;
+
+                for (var i=0; i<sources.length; i++){
+                    var tag = sources[i].get('tags')[0];
+                    if (tag == sourcetag){
+                        return sources[i]
+                    }
+                }
+            }
+
+            function disableSource(source){
+                // save the original data so we can restore it when enabling the source again
+                if (source.get('odata') == undefined){
+                    source.set('odata', source.get('data'));
+                }
+                source.set('data', {});
+            }
+
+            function enableSource(source){
+                // save the original data so we can restore it when enabling the source again
+                if (source.get('odata') == undefined){
+                    source.set('odata', source.get('data'));
+                }
+                source.set('data', source.get('odata'));
+            }
+
+            function log_expand_element(elementType, elementId){
+
+                var msg = {
+                    activity: 'perform',
+                    action: 'click',
+                    elementId: "header_" + elementId,
+                    elementType: 'link',
+                    elementSub: 'title',
+                    elementGroup: 'query_group',
+                    source: 'user',
+                    tags: ['query', 'parameters', elementType + " details" + elementId]
+                    //meta: elementType + " details" + elementId
+                  };
+                console.log(msg);
+                ale.log(msg);
+
+                var exp_el = $("#header_" + elementId)[0];
+                console.log('asa', exp_el.checked);
+                if (exp_el.checked){
+                    var pnl_action = "collapse";
+                }else{
+                    var pnl_action = "expand";
+                }
+                var msg = {
+                        activity: 'open',
+                        action: pnl_action,
+                        elementId: "header_" + elementId,
+                        elementType: 'panel',
+                        elementGroup: 'query_group',
+                        source: 'system',
+                        tags: ['query', 'parameters', elementType + " details" + elementId]
+                        //meta: elementType + " details" + elementId
+
+                  };
+                console.log(msg);
+                ale.log(msg);
+
+            }
+
+            function show_spam(spam_id){
+
+                var msg = {
+                    activity: 'perform',
+                    action: 'click',
+                    elementId: "header_" + spam_id,
+                    elementType: 'link',
+                    elementSub: 'title',
+                    elementGroup: 'query_group',
+                    source: 'user',
+                    tags: ['query', 'parameters', "Spam details" + spam_id]
+                    //meta: "Spam details" + spam_id
+                  };
+                console.log(msg);
+                ale.log(msg);
+
+                url = "/spam_details/?id=" + spam_id;
+                xhr = $.ajax({
+                    type: 'GET',
+                    url: url,
+                    contentType: "application/json",
+                    // data: jsondata,
+                    header: {
+                      client: "javascript"
+                    }
+                });
+
+                xhr.done(function(data) {
+                    $("#content_" + spam_id).html(data.content)
+                    var msg = {
+                        activity: 'open',
+                        action: 'expand',
+                        elementId: "header_" + spam_id,
+                        elementType: 'panel',
+                        elementGroup: 'query_group',
+                        source: 'system',
+                        tags: ['query', 'parameters', "Spam details" + spam_id]
+                        //meta: "Spam details" + spam_id
+
+                      };
+                    console.log(msg);
+                    ale.log(msg);
+                });
+            }
+
+            window.onload = function() {
+
+                /* record visited symbol */
+                pushToSelectedSymbols("{{ symbol }}");
+
+                /* initialize legend */
+                var legendContainer = document.getElementById('legendContainer');
+
+                function LegendItem(chartItemSource, legendName, className) {
+                    var isVisible = true;
+                    var newLegendItem = document.createElement('div');
+                    newLegendItem.className = "legendItem";
+                    var visibilityToggle = document.createElement('div');
+                    visibilityToggle.className = "legend_visibilty";
+                    newLegendItem.onclick = function () {
+                        toggleVisibility()
+                    };
+                    var label = document.createElement('div');
+                    label.className = "legendLabel";
+                    var labelText = document.createElement('span');
+                    labelText.className = "legendLabelText";
+                    labelText.innerHTML = legendName;
+                    var labelImage = document.createElement('span');
+                    labelImage.className = "legendImage" + " " + className;
+                    label.appendChild(labelImage);
+                    label.appendChild(labelText);
+                    newLegendItem.appendChild(visibilityToggle);
+                    newLegendItem.appendChild(label);
+                    legendContainer.appendChild(newLegendItem);
+
+                    function toggleVisibility() {
+                        isVisible = !isVisible;
+                        newLegendItem.className = (isVisible) ? 'legendItem visible' : 'legendItem hidden';
+
+                        var source = get_source_by_tag(chartItemSource);
+                        if (isVisible){
+                            enableSource(source);
+
+                            msg = {
+                                activity: 'select',
+                                action: 'click',
+                                elementType: 'checkbox',
+                                elementId: 'chk_' + chartItemSource,
+                                elementGroup: 'chart_group',
+                                source: 'user',
+                                tags: ['paremeter', 'query']
+                            };
+                            ale.log(msg);
+
+                        }else{
+                            disableSource(source);
+
+                            msg = {
+                                activity: 'deselect',
+                                action: 'click',
+                                elementType: 'checkbox',
+                                elementId: 'chk_' + chartItemSource,
+                                elementGroup: 'chart_group',
+                                source: 'user',
+                                tags: ['paremeter', 'query']
+                            };
+                            ale.log(msg);
+                        }
+                    }
+                    return newLegendItem
+                }
+
+               // var box1 = new LegendItem('min_source', 'Close Price', 'gray1');
+                var box2 = new LegendItem('pump_and_dumps', 'P&D Intervals', 'orangeBars');
+                var box3 = new LegendItem('main_source', 'Adj. Close Price', 'blackLine');
+                var box4 = new LegendItem('volume', 'Volume', 'gray2');
+//                var box5 = new LegendItem('yellow bars', 'P&D Intervals', 'yellowBars');
+                var box5 = new LegendItem('edgar', 'SEC EDGAR Filings', 'diamonds');
+                var box6 = new LegendItem('spam', 'Spams', 'redDots');
+                //var box7 = new LegendItem('memex', 'MEMEX', 'circleM');
+                //var box8 = new LegendItem('forum', 'Forum Data', 'circleF');
+                var box9 = new LegendItem('split', 'Split', 'diamondS');
+                var box10 = new LegendItem('small_cap_news', 'Small cap news', 'greenDot');
+                var box11 = new LegendItem('memex_forum', 'Forum Data', 'orangeDot');
+
+                // Now let's disable memex forum data by default
+                box11.click();
+                //var source = get_source_by_tag("memex_forum");
+                //disableSource(source);
+
+                $(".toggle-box").onclick = function() {
+                    console.log('asdoo');
+                }
+            }
+        </script>
+
+
+    {{ plot_resources|indent(4)|safe }}
+
+    {{ plot_script|indent(4)|safe }}
+
+
+    </head>
+    <body>
+        <header class="dashboardHeader">
+            <div class="selectorLauncher" onclick="open_select_symbol();">
+                <div class="selectorLauncher_trigger" id="btn_new_symbol">
+                    <span></span>
+                </div>
+                <div class="selectorLauncher_label">
+                    {{ symbol }}
+                </div>
+            </div>
+            <div class="dashboardButtons">
+
+                <div class="plotdiv bk-bs-btn bk-bs-btn-default" id="btn_help" onclick="open_help_symbol();">
+                    Help
+                </div>
+                <div class="plotdiv bk-bs-btn bk-bs-btn-default" id="tourBtn">
+                    Tour
+                </div>
+            </div>
+        </header>
+
+        <div class="dashboardBody">
+            <div id="plot_wrapper">
+                {{ extra_divs.main_app|indent(4)|safe }}
+                <div id="legendContainer"></div>
+            </div>
+
+
+        </div>
+            <div id="plugins_wrapper" class="hidden">
+                <div id="details_panel"></div>
+                <span class="details_pointer"></span>
+            </div>
+        <div id="info_dialog" class="modalDialog">
+            <div>
+                <a id="close_info_dialog" href="#" title="Close" class="close" onclick="close_panel_info_dialog();">X</a>
+                <div id="info_dialog_content">
+                    <h2>Modal Box</h2>
+                    <p>This is a sample modal box that can be created using the powers of CSS3.</p>
+                    <p>You could do a lot of things here like have a pop-up ad that shows when your website loads, or create a login/register form for users.</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="stocks_list_dialog" class="modalDialog">
+            <div>
+                <a id="close_stocks_list_dialog" href="#" title="Close" class="close" onclick="close_select_symbol();">X</a>
+                <h2>Select a symbol:</h2>
+                <div id="table_container">
+                    <p>Click on any symbol to view it in the dashboard.</p>
+                    {{ extra_divs.table_ranks|indent(4)|safe }}
+                 </div>
+                <div id="clearVisited_button" class="bk-bs-btn-default theme-small">
+                    Clear Visited Symbols
+                </div>
+             </div>
+        </div>
+
+         <div id="help_dialog" class="modalDialog">
+             <div  style="width: 800px;">
+                 <a id="close_help_dialog" href="#" title="Close" class="close" onclick="close_help_dialog();">X</a>
+                 <div>
+                 <img src="/static/images/FEAT_help_img.jpg" alt="help"  width="750" height="500" >
+                 </div>
+                 <div class="tourButtons">
+                    <div class="bk-bs-btn bk-bs-btn-default" id="btn_open_symbol_help" onclick="open_help_open_symbol();">Need help selecting a symbol?</div>
+                     <div class="bk-bs-btn bk-bs-btn-default tourLink">Take a Tour</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="help_open_symbol_dialog" class="modalDialog">
+             <div  style="width: 800px;">
+                 <a id="close_help_open_symbol_dialog" href="#" title="Close" class="close" onclick="open_help_symbol();">X</a>
+                 <div>
+                 <img src="/static/images/FEAT_help_img_symbol_select.jpg" alt="help"  width="750" height="500" >
+                 </div>
+                <div class="tourButtons">
+                     <div class="bk-bs-btn bk-bs-btn-default" onclick="open_help_symbol();">Back to General Help</div>
+                     <div class="bk-bs-btn bk-bs-btn-default tourLink">Take a Tour</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="loading_modal">
+            <!-- Place at bottom of page -->
+            <div style="position: fixed; left: 5%; top: 92%;">
+                <a onclick="window.prev_loaded_flag = 'loaded';">CLOSE</a>
+            </div>
+        </div>
+
+        <div>
+            {{ extra_divs.dlg_peaks|indent(4)|safe }}
+        </div>
+
+    <!-- Tip Content -->
+    <ol id="joyRideTipContent">
+        <li data-button="Next: Detail Page" class="custom">
+            <h3>Symbol Selection Table</h3>
+            <p>Clicking on a row will display the detailed information for the chosen symbol. The columns are sortable by clicking on the column header. Clicking once sorts in ascending order. Click again to change the order to descending.
+            <br>
+            The columns are:
+                <ul>
+                    <li><b>Symbol:</b> Market symbol for security.</li>
+                    <li><b>Volume Ratio</b> Indicates "spikiness" of trade volume. A large number indicates a bigger swing in volume.</li>
+                    <li><b>Risk:</b> Intersection of price spikes and promotional activity. Higher number indicates more promotional activity around price spikes.</li>
+                    <li><b>Spams:</b> Number of spam emails on symbol during period.</li>
+                </ul>
+                <img src="static/images/tour/symbol_select.png" />
+            </p>
+        </li>
+        <li data-button="Next: Overiew Graph">
+            <h3>Detail Page</h3>
+            <p>The Detail Page shows additional information for each symbol. If the information is availabe the following are shown:
+            <br>
+                <ul>
+                    <li><b>Overview Graph</b> Top graph that shows concise picture of the information over time and period of interest.</li>
+                    <li><b>Detail Graph</b> Bottom, zoomable graph that shows the information with more details available via mouse-overs and by clicking on points of interest.</li>
+                </ul>
+                <img src="static/images/tour/detail_page_overview.png" />
+            </p>
+        </li>
+        
+        <li data-button="Next: Zoom on Region">
+            <h3>Overview Graph</h3>
+            <p>The overview graph never changes scales and always show the different types of information. The graph shows:
+            <br>
+                <ul>
+                    <li><b>Close Price</b> - Line showing the closing price of the security</li>
+                    <li><b>Region of Interest</b> - Yellow area <span class="legendImage orangeBars"></span>where possible pump and dump activity was detected by the algorithms.</li>
+                    <li><b>Spam</b> - (Red dot <span class="legendImage redDots"></span>) placed on price line for each promotional spam</li>
+                    <li><b>News</b> (Green dot <span class="legendImage greenDots"></span>) news stories by analysts</li>
+                    <li><b>SEC Filings</b> (Blue Diamond <span class="legendImage diamond"></span>) EDGAR filing</li>
+                </ul>
+                <img src="static/images/tour/overview_graph.png" />
+                <br>
+            </p>
+        </li>
+        <li></li>
+        <li data-button="Next: Detail Graph" >
+            <h3>Zoom on Region</h3>
+            <p>To zoom in a particular region, click and drag on the overview graph. The zoomed region will be shaded in a light blue and the large detail graph will only show that region.
+            <br>
+                <ul>
+                    <li><img src="static/images/tour/zoomed_overview.png" /></li>
+                </ul>
+            </p>
+        </li>
+         <li data-button="Next: Mouse-Overs" class="custom">
+            <h3>Detail Graph</h3>
+            <p>The detail graph shows the same information as the smaller overview graph but allows more interaction with the data. Addition actions possible in the detail graph are:
+                <br>
+                <ul>
+                    <li><b>Scroll Zoom</b> - use the mouse wheel to zoom in and out of a time period.</li>
+                    <li><b>Mouse Over</b> - mouseover filing diamionds, news dots, and forum dots for more information on the respective underlying filing, news, or forum</li>
+                    <li><b>Click for more detail</b> - For even more detail click on spam, news, or forum dots. A window will open with more information.</li>
+                    <li><b>Turn Off/On</b> - Click on the checkboxes in the legend to hide/unhide the corresponding data on the detail graph.</li>
+                    <li><b>Pan</b> - Click on the graph and move the mouse to move the graph. Useful when zoomed in.</li>
+                </ul>
+                <br>
+                <img src="static/images/tour/detail_graph.png" />
+            </p>
+         </li>
+         <li data-button="Next: Tool Bar" nextButtn=true previousButton=true>
+            <h3>Mouse-Overs</h3>
+            <p>Mouse over the following for a summary of underlying detail.
+                <br><br><b>Filing Diamond</b>
+                <br><img src="static/images/tour/mouse_over_edgar.png" />
+                <br><br><b>News Dot (green)</b> <br><img src="static/images/tour/mouse_over_news.png" />
+                <br><br><b>Forum Dot (orange)</b> <br><img src="static/images/tour/mouse_over_forum.png" />
+            </p>
+         </li>
+         <li data-button="Next: Tools">
+            <h3>Toolbar</h3>
+            <p>Different tools are available to use in conjunction with the detail graph. When a tool is active there is a blue vertical line to the right of the tool. Mouse-over a tool to see what the name of the too.
+            <br>
+            <img src="static/images/tour/tool_bar.png" />
+            </p>
+         </li>
+         <li data-button="Next: Hover Tool">
+            <h3>Tools</h3>
+            <p>The following tools are available in the current version.
+                <br><br><b>Pan</b> - <img src="static/images/tour/tool_pan.png" /> - Click-hold on the detail graph allows you to move the graph. Clicking on this tool deactivates the Box Zoom tool.
+                <br><br><b>Box Zoom</b> - <img src="static/images/tour/tool_box_zoom.png" /> - Using the Box Zoom allows you to click and drag on an area of the detail graph and have the gaph zoom to that region. Clicking on this tool deactivates the Pan tool.
+                <br><br><b>Wheel Zoom </b> - <img src="static/images/tour/tool_wheel_zoom.png" /> - The wheel zoom allows zooming in/out on the dates (x-axis) with the mouse wheel if the cursor is over the detail graph.
+                <br><br><b>Tap</b> - <img src="static/images/tour/tool_tap.png" /> -Enables showing more detail when clicking on a spam, forum, or news symbol. This tool is always active.
+                <br><br><b>Reset</b> - <img src="static/images/tour/tool_reset.png" /> - Click on this tool to reset the Detail Graph to match the time range of the overview graph.
+                <br><br><b>Hover</b> - <img src="static/images/tour/tool_hover.png" /> - This tool enables and disables showing information for different sources when hovering over the symbol. If too much is being shown when hovering over a group of dots you can use this tool to disable showing certain types of information, such as filing information.
+            </p>
+         </li>
+         <li data-button="Next: Spam/Forum Detail">
+            <h3>Hover Tool</h3>
+            <p>Clicking on the hover tool allows the enabling and disabling of various hover information.
+                <br>
+                <img src="static/images/tour/tool_hover_expanded.png" />
+                <br> The different checkboxes enable/diable as follows:
+                <ul>
+                    <li><b>Crosshair</b> - Enables/Disables the horizontal and virtical lines the follow the mouse </li>
+                    <li><b>Hover Tool</b> - Enables/Disables the display of closing mouse-over information, such as price, for the symbol</li>
+                </ul>
+            </p>
+         </li>
+         <li data-button="Next: Expanded Spam/Forum Detail">
+            <h3>Spam/Forum Detail</h3>
+            <p>Clicking near a spam, forum, or news dot will pop up a window with additional information. The nearby spams, forum, and news entries will be collapsed. Clicking on the "Plus" sign will expand/collapse the information.
+            <br>
+            <img src="static/images/tour/spam_forum_detail.png" />
+            </p>
+         </li>
+         <li data-button="Next: Symbol Picker">
+            <h3>Expanded Spam/Forum Detail</h3>
+            <p>Clicking on a plus sign shows you text of associated the spam email, the forum posting, or the news article by an analyst.
+            <br>
+            <img src="static/images/tour/spam_expanded.png" />
+            </p>
+         </li>
+         <li data-button="Next: Help Button">
+            <h3>Symbol Picker</h3>
+            <p>To go to a new symbol click on the symbol pick at the upper left of the page. Clicking on the Symbol Picker will bring up the Symbol Selection Table.
+            <br>
+            <img src="static/images/tour/symbol_picker.png" />
+            </p>
+         </li>
+         <li data-button="Next: End">
+            <h3>Help Button</h3>
+            <p>To Get back to this help click on the Help button at the upper right of the page..
+            <br>
+            <img src="static/images/tour/need_help_button.png" />
+            </p>
+         </li>
+    </ol>
+
+    <!-- Run the plugin -->
+        <script src="/static/js/jquery-1.10.1.js"></script>
+        <script type="text/javascript" src="/static/js/jquery.cookie.js"></script>
+        <script type="text/javascript" src="/static/js/modernizr.mq.js"></script>
+        <script type="text/javascript" src="/static/js/jquery.joyride-2.1.js"></script>
+
+
+        <script>
+            function hook_logger() {
+                var loaded = $(".bk-canvas-wrapper")[0];
+
+                if (loaded!=undefined){
+                    // hook when user enters the small plot
+                    $(".bk-canvas-wrapper[height=150]").on("mouseover", function(){
+                        msg = {
+                            activity: 'enter',
+                            action: 'mouseover',
+                            elementType: 'canvas',
+                            elementId: 'small_plot',
+                            elementGroup: 'chart_group',
+                            source: 'user',
+                            tags: ['query']
+                        };
+                        ale.log(msg);
+                    });
+                    // hook when user leaves the small plot
+                    $(".bk-canvas-wrapper[height=150]").on("mouseleave", function(){
+                        msg = {
+                            activity: 'leave',
+                            action: 'mouseout',
+                            elementType: 'canvas',
+                            elementId: 'small_plot',
+                            elementGroup: 'chart_group',
+                            source: 'user',
+                            tags: ['query']
+                        };
+                        ale.log(msg);
+                    });
+                    // hook when user enters the main plot
+                    $(".bk-canvas-wrapper[height=350]").on("mouseover", function(){
+                        msg = {
+                            activity: 'enter',
+                            action: 'mouseover',
+                            elementType: 'canvas',
+                            elementId: 'main_plot',
+                            elementGroup: 'chart_group',
+                            source: 'user',
+                            tags: ['query']
+                        };
+                        ale.log(msg);
+                    });
+                    // hook when user leaves the main plot
+                    $(".bk-canvas-wrapper[height=350]").on("mouseleave", function(){
+                        msg = {
+                            activity: 'leave',
+                            action: 'mouseout',
+                            elementType: 'canvas',
+                            elementId: 'main_plot',
+                            elementGroup: 'chart_group',
+                            source: 'user',
+                            tags: ['query']
+                        };
+                        ale.log(msg);
+                    });
+
+                    window.mouse_on_tools = false;
+                    // hook when user enters the tools bar
+                    $('.bk-toolbar-active').on("mouseover", function(){
+                        if (!window.mouse_on_tools){
+                            msg = {
+                                activity: 'enter',
+                                action: 'mouseover',
+                                elementType: 'toolbar',
+                                elementId: 'chartTools',
+                                elementGroup: 'query_group',
+                                source: 'user',
+                                tags: ['query']
+                            };
+                            console.log(msg);
+                            ale.log(msg);
+                            window.mouse_on_tools = true;
+                        }
+                    });
+
+                    // hook when user leaves the tools bar
+                    $('.bk-toolbar-active').on("mouseleave", function(){
+                        msg = {
+                            activity: 'leave',
+                            action: 'mouseout',
+                            elementType: 'toolbar',
+                            elementId: 'chartTools',
+                            elementGroup: 'query_group',
+                            source: 'user',
+                            tags: ['query']
+                        };
+                        console.log(msg);
+                        ale.log(msg);
+                        window.mouse_on_tools = false;
+                    });
+
+                                        // hook when user leaves the tools bar
+                    $('.bk-toolbar-active').on("click", function(){
+                        msg = {
+                            activity: 'perform',
+                            action: 'click',
+                            elementType: 'button',
+                            elementId: 'toolBtn',
+                            elementGroup: 'query_group',
+                            source: 'user',
+                            tags: ['query']
+                        };
+                        console.log(msg);
+                        ale.log(msg);
+                    });
+
+
+                    window.bokeh_divs_id = {{ bokeh_divs_id_json|safe }}
+
+                    // set the stock prices tooltip on top of others
+                    $("div.bk-tooltip")[0].style['zIndex']=10000;
+
+                    $('.bk-canvas-wrapper').each( function( index, element ){
+                        if (element.getAttribute('height')=='150'){
+                            element.setAttribute('id', 'small_plot_div');
+                        }else{
+                            element.setAttribute('id', 'main_plot_div');
+                        }
+                    });
+
+
+                    $('#joyRideTipContent').joyride({
+                      autoStart : false,
+                      postStepCallback : function (index, tip) {
+                      if (index == 2) {
+                        $(this).joyride('set_li', false, 1);
+                      }
+                    },
+                    modal:true,
+                    expose: true
+                    });
+
+                }else{
+                    setTimeout(hook_logger, 1000);
+                }
+
+
+              $('.tourLink').click(function(){
+                  $('#help_dialog').removeClass('modalTarget');
+                  $('#help_open_symbol_dialog').removeClass('modalTarget');
+                   $("#joyRideTipContent").joyride({
+                    /* Options will go here */
+                        modal:true,
+                        expose:true
+                    });
+                   msg = {
+                            activity: 'view_tour',
+                            action: 'click',
+                            elementType: 'button',
+                            elementId: 'help_tour_button',
+                            elementGroup: 'help_group',
+                            source: 'user',
+                            tags: ['query']
+                        };
+                        ale.log(msg);
+                });
+
+
+              $('#tourBtn').click(function(){
+                   $("#joyRideTipContent").joyride({
+                    /* Options will go here */
+                        modal:true,
+                        expose:true
+                    });
+                   msg = {
+                            activity: 'view_tour',
+                            action: 'click',
+                            elementType: 'button',
+                            elementId: 'tour_button',
+                            elementGroup: 'help_group',
+                            source: 'user',
+                            tags: ['query']
+                        };
+                        ale.log(msg);
+                });
+            }
+            hook_logger();
+        </script>
+    </body>
+</html>

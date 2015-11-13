@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/html">
+    <head>
+        <meta charset="utf-8">
+        <title>FEAT</title>
+
+        <link rel="stylesheet" href="/static/css/feat.css" type="text/css" />
+
+
+
+        <script src="{{ app_url }}"></script>
+        <script src="http://code.jquery.com/jquery-1.8.2.min.js"></script>
+        <script src="/static/js/draper.activity_logger-2.1.1.js"></script>
+        <script src="/static/js/userale.js" charset="utf-8"></script>
+        <script src="/static/js/userale.js" charset="utf-8"></script>
+
+        <script>
+            window._bokeh_onload_callbacks = [window.Dashboard.main];
+
+            // INITIALIZING AND REGISTERING INSTRUMENTATION
+            // LIBRARY (Draper Logging Library)
+            // [updated] reference: https://xd-web-proxy.data-tactics-corp.com/wiki/pages/viewpage.action?pageId=15566031
+
+            // Instantiate Logger
+           var ale = new userale({ 
+                loggingUrl: 'http://10.1.93.208', //The url of the User-ALE logging server.
+                toolName: 'FEAT', //The name of your tool
+                toolVersion: '0.1', //The semantic version of your tool
+                elementGroups: [ //A list of element groups used in your tool (see below)
+                  'graph_group',
+                  'input_group',
+                  'table_group',
+                    'query_group',
+                ],
+                workerUrl: '/static/js/userale-worker.js', //The location of the User-ALE webworker file
+                debug: true, //Whether to log messages to console
+                sendLogs: true //Whether or not to send logs to the server (useful during testing)
+            });
+
+            // Register Logger
+            ale.register();
+
+
+            // set flag that will be used to regulate tap tool OpenURL issue
+            window.last_ts = Date.now()
+
+            // REGISTER LOADING WINDOW FUNCTIONS
+            $body = $("body");
+
+            function check_loaded() {
+                //var loaded = $('.bk-ui-widget-content').length;
+                var loaded = $('.bk-ui-slider')[0].id;
+                console.log("CHECKING" + window.prev_loaded_flag + '   ' + loaded);
+
+                if (loaded!=window.prev_loaded_flag){
+                    console.log('closing');
+                    $("body").removeClass("loading");
+                    window.prev_loaded_flag = loaded;
+
+                }else{
+                    setTimeout(check_loaded, 1000);
+                }
+            }
+
+            window.onload = function () {
+                window.bkdata = {
+                    x: [1, 2, 3, 4, 5],
+                    y: [4, 5, 3, 5.5, 1],
+                    size: [12, 14, 16, 18, 20],
+                    colors: ['pink', 'orange', 'red', 'blue', 'green']
+                }
+
+                window.spec = {
+                    type: 'Line',
+                    source: window.bkdata,
+                    x: 'x',
+                    y: 'y',
+                    line_width: 1,
+                    line_color: '#43A2CA'
+                }
+
+                window.options = {
+                    title: null,
+                    min_border: 10,
+                    plot_width: 150,
+                    plot_height: 40,
+                    x_range: [1, 5],
+                    y_range: [0, 6]
+                }
+
+
+            }
+        </script>
+
+
+    </head>
+    <body style="background-color: white;">
+        <div class="wrapper" onclick="$('#stocks_list_dialog').addClass('modalTarget');">
+           <div class="ribbon-wrapper-green"><div class="ribbon-green">Select Symbol</div></div>
+    </div>​
+
+        <div id="plot_wrapper">
+            {{ app_tag|indent(8)|safe }}
+        </div>
+
+        <div name='iframe_trends' id="iframe_trends" style="border-style: none; margin-left: 40px;" >
+            <iframe scrolling="no" style="border:none;" width="800" height="200" src="http://www.google.com/trends/fetchComponent?hl=en-US&q={{ symbol }}&date=1/2010+67m&cmpt=q&tz&tz&content=1&cid=TIMESERIES_GRAPH_0&export=5&w=800&h=200"></iframe>
+        </div>
+
+        <div id="info_dialog" class="modalDialog">
+            <div>
+                <a id="close_info_dialog" href="#" title="Close" class="close" onclick="$('#info_dialog').removeClass('modalTarget');">X</a>
+                <div id="info_dialog_content">
+                    <h2>Modal Box</h2>
+                    <p>This is a sample modal box that can be created using the powers of CSS3.</p>
+                    <p>You could do a lot of things here like have a pop-up ad that shows when your website loads, or create a login/register form for users.</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="stocks_list_dialog" class="modalDialog">
+             <div>
+                <a id="close_info_dialog" href="#" title="Close" class="close" onclick="$('#stocks_list_dialog').removeClass('modalTarget');">X</a>
+                 <h2>Select a symbol:</h2>
+                 <div id="table_container">Click on any symbol to analyze it</div>
+                </div>
+            </div>
+        </div>
+        <div class="loading_modal">
+            <!-- Place at bottom of page -->
+            <div style="position: fixed; left: 5%; top: 92%;">
+                <a onclick="window.prev_loaded_flag = 'loaded';">CLOSE</a>
+            </div>
+        </div>
+        <script>
+            function place_table() {
+                var table = document.getElementsByClassName('bk-data-table')[0];
+                if (table != undefined) {
+                    document.getElementById('table_container').appendChild(table);
+                    $("body").removeClass("loading");
+                } else {
+                    setTimeout(place_table, 1000);
+                }
+            }
+//            $("body").addClass("loading");
+//            place_table();
+        </script>
+    </body>
+</html>
